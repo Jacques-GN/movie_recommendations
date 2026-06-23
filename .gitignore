@@ -1,0 +1,8 @@
+# .gitignore
+data/
+*.csv
+*.zip
+__pycache__/
+*.pyc
+trainer/
+*.yml
