@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 NetflixFlix - Système de Recommandation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="logo">🎬 NetflixFlix</div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-bar" placeholder="Rechercher des films...">
+                <button class="search-btn">🔍</button>
+            </div>
+            <div class="navbar-items">
+                <button class="nav-btn" onclick="showSection('home')">Accueil</button>
+                <button class="nav-btn" onclick="showSection('recommendations')">Mes Recommandations</button>
+                <button class="nav-btn" onclick="showSection('genres')">Catégories</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Bienvenue sur NetflixFlix</h1>
+            <p>Découvrez des films recommandés spécialement pour vous</p>
+        </div>
+    </div>
+
+    <!-- Sections principales -->
+    <div class="container">
+        <!-- Section Accueil -->
+        <section id="home" class="section active">
+            <h2>🎥 Films Populaires</h2>
+            <div id="topMoviesContainer" class="movies-grid"></div>
+        </section>
+
+        <!-- Section Recommandations -->
+        <section id="recommendations" class="section">
+            <h2>Mes Recommandations Personnalisées</h2>
+            <div class="recommendation-input">
+                <label for="userId">Entrez votre numéro d'utilisateur :</label>
+                <input type="number" id="userId" min="1" placeholder="Ex: 1, 5, 10...">
+                <button onclick="getRecommendations()" class="btn-primary">Obtenir mes recommandations</button>
+            </div>
+            <div id="recommendationsContainer" class="movies-grid"></div>
+        </section>
+
+        <!-- Section Catégories -->
+        <section id="genres" class="section">
+            <h2>📽️ Parcourir par Catégories</h2>
+            <div id="genresContainer" class="genres-grid"></div>
+            <div id="genreMoviesContainer" class="movies-grid" style="margin-top: 30px; display:none;">
+                <button class="btn-secondary" onclick="showSection('genres')">← Retour aux catégories</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de détails du film -->
+    <div id="movieModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
