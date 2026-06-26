@@ -5,15 +5,28 @@ from surprise.model_selection import train_test_split
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import json
-
+import json 
+from dotenv import load_dotenv
+from supabase import create_client
 app = Flask(__name__)
 
 # --- Charger les données ---
 try:
-    ratings = pd.read_csv("data/ratings.csv")
-    movies_df = pd.read_csv("data/movies.csv")
-    print("✅ Données chargées avec succès")
+    load_dotenv()
+
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+
+    supabase = create_client(url, key)
+
+    ratings = pd.DataFrame(supabase.table("ratings").select("*").execute().data)
+    movies_df = pd.DataFrame(supabase.table("movies").select("*").execute().data)
+    tags_df = pd.DataFrame(supabase.table("tags").select("*").execute().data)
+
+    print("✅ Données chargées depuis Supabase")
+    print("Ratings :", len(ratings))
+    print("Movies :", len(movies_df))
+    print("Tags :", len(tags_df))
 except FileNotFoundError:
     print("❌ Les fichiers data/ratings.csv ou data/movies.csv sont manquants")
     ratings = pd.DataFrame()

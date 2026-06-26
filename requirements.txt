@@ -3,6 +3,7 @@ Werkzeug
 pandas
 scikit-learn
 scikit-surprise
-matplotlib
 numpy
 scipy
+supabase
+python-dotenv
