@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CinéIA — Recommandations de Films</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #080c14;
+      --surface: #111827;
+      --card:    #1a2235;
+      --border:  #1f2d45;
+      --gold:    #f5c842;
+      --gold2:   #e8a500;
+      --text:    #e8eaf0;
+      --muted:   #6b7a99;
+      --red:     #e53935;
+      --green:   #00c853;
+      --radius:  12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,12,20,.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      font-size: 22px; font-weight: 900; letter-spacing: -0.5px;
+      color: var(--gold);
+    }
+    .logo span { color: var(--text); }
+
+    .nav-tabs {
+      display: flex; gap: 4px;
+    }
+    .tab-btn {
+      padding: 8px 18px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: 14px; font-weight: 600;
+      background: transparent; color: var(--muted);
+      transition: all .2s;
+    }
+    .tab-btn:hover   { color: var(--text); background: var(--border); }
+    .tab-btn.active  { background: var(--gold); color: #000; }
+
+    .stats-badge {
+      display: flex; gap: 16px;
+    }
+    .stat-item { text-align: center; }
+    .stat-item .val { font-size: 15px; font-weight: 700; color: var(--gold); }
+    .stat-item .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 56px 32px 40px;
+      background: linear-gradient(135deg, #0d1626 0%, #080c14 60%, #101828 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .hero h1 em { color: var(--gold); font-style: normal; }
+    .hero p { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+
+    .search-row {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .input-group {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      flex: 1; min-width: 200px; max-width: 340px;
+    }
+    .input-group label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .input-group input,
+    .input-group select {
+      background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 15px; font-weight: 600;
+      width: 100%;
+      appearance: none;
+    }
+    .input-group select {
+      cursor: pointer;
+    }
+    .btn-gold {
+      background: var(--gold); color: #000;
+      border: none; border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-gold:hover { background: var(--gold2); transform: translateY(-1px); }
+
+    /* ── SEARCH AUTOCOMPLETE ── */
+    .search-wrap { position: relative; flex: 1; min-width: 260px; max-width: 400px; }
+    .search-input-inner {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+    }
+    .search-input-inner label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .search-input-inner input {
+      background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 15px; font-weight: 600; width: 100%;
+    }
+    .autocomplete {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      z-index: 200; display: none;
+    }
+    .autocomplete.show { display: block; }
+    .ac-item {
+      padding: 12px 16px; cursor: pointer; transition: background .15s;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: var(--border); }
+    .ac-genre { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── MAIN SECTIONS ── */
+    main { padding: 0 32px 60px; }
+
+    .section { padding: 40px 0 0; display: none; }
+    .section.active { display: block; }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 18px; font-weight: 700;
+    }
+    .section-title span { color: var(--gold); }
+    .result-count { font-size: 13px; color: var(--muted); }
+
+    /* ── MOVIE GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .movie-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+      cursor: default;
+    }
+    .movie-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    }
+
+    .card-poster {
+      height: 200px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-poster::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: inherit;
+      filter: brightness(.6);
+    }
+    .poster-icon {
+      font-size: 40px; z-index: 1; margin-bottom: 6px;
+    }
+    .poster-genre-tag {
+      z-index: 1;
+      background: rgba(0,0,0,.5);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px; font-weight: 600;
+      color: #fff;
+    }
+
+    .score-badge {
+      position: absolute; top: 10px; right: 10px;
+      z-index: 2;
+      background: rgba(0,0,0,.75);
+      border: 1.5px solid var(--gold);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 13px; font-weight: 800;
+      color: var(--gold);
+    }
+    .sim-badge {
+      position: absolute; top: 10px; right: 10px;
+      z-index: 2;
+      background: rgba(0,200,83,.15);
+      border: 1.5px solid var(--green);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px; font-weight: 700;
+      color: var(--green);
+    }
+
+    .card-body { padding: 12px 14px 14px; }
+    .card-title {
+      font-size: 13px; font-weight: 700;
+      line-height: 1.4; margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-genres {
+      font-size: 11px; color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-genres span {
+      background: var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-right: 4px;
+      font-size: 10px;
+    }
+
+    /* ── SCORE BAR ── */
+    .score-bar-wrap { margin-top: 8px; }
+    .score-bar-track {
+      height: 3px; background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--gold2), var(--gold));
+      transition: width .6s ease;
+    }
+
+    /* ── LOADING / EMPTY STATES ── */
+    .state-box {
+      text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .state-box .icon { font-size: 48px; margin-bottom: 12px; }
+    .state-box p { font-size: 15px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 14px;
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.error { border-color: var(--red); color: var(--red); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 16px; }
+      .stats-badge { display: none; }
+      .hero, main { padding-left: 16px; padding-right: 16px; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="logo">Ciné<span>IA</span></div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showSection('home', event)">🏠 Accueil</button>
+    <button class="tab-btn" onclick="showSection('catalog', event)">📚 Catalogue</button>
+    <button class="tab-btn" onclick="showSection('collab', event)">👥 Pour moi</button>
+    <button class="tab-btn" onclick="showSection('content', event)">🎯 Similaires</button>
+  </div>
+
+  <div class="stats-badge">
+    <div class="stat-item">
+      <div class="val">{{ stats.nb_films | default(9000) | int | string }}+</div>
+      <div class="lbl">Films</div>
+    </div>
+    <div class="stat-item">
+      <div class="val">{{ stats.nb_users | default(671) | int | string }}+</div>
+      <div class="lbl">Utilisateurs</div>
+    </div>
+    <div class="stat-item">
+      <div class="val">{{ (stats.nb_notes / 1000) | round(0) | int }}K</div>
+      <div class="lbl">Évaluations</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <h1>Découvrez votre prochain<br/><em>film préféré</em></h1>
+  <p>Intelligence artificielle · Filtrage collaboratif + contenu · MovieLens Dataset</p>
+
+  <div class="search-row">
+
+    <!-- Collaboratif : user sélectionné -->
+    <div class="input-group">
+      <label>👤 Profil utilisateur</label>
+      <select id="userSelect" onchange="syncUserSelection()">
+        <option value="">Sélectionnez un profil</option>
+        {% for user in named_users %}
+        <option value="{{ user.name|e }}">{{ user.name }} ({{ user.user_id }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="input-group">
+      <label>ou saisissez un ID</label>
+      <input type="number" id="userId" placeholder="ex: 1" min="1" value="1"
+             onkeydown="if(event.key==='Enter') getRecommendations()"/>
+    </div>
+    <button class="btn-gold" onclick="getRecommendations()">🎬 Mes recommandations</button>
+
+    <!-- Contenu : titre -->
+    <div class="search-wrap">
+      <div class="search-input-inner">
+        <label>🔍 Film</label>
+        <input type="text" id="movieSearch" placeholder="ex: Toy Story"
+               oninput="searchMovies(this.value)"
+               onkeydown="if(event.key==='Enter') getSimilar()"/>
+      </div>
+      <div class="autocomplete" id="autocomplete"></div>
+    </div>
+    <button class="btn-gold" onclick="getSimilar()">🎯 Films similaires</button>
+
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- HOME : populaires -->
+  <div id="section-home" class="section active">
+    <div class="section-header">
+      <div class="section-title">⭐ Films les mieux <span>notés</span></div>
+      <div class="result-count">{{ popular_movies|length }} films</div>
+    </div>
+    <div class="grid">
+      {% for film in popular_movies %}
+      <div class="movie-card">
+        <div class="card-poster" style="background:{{ film.color }};">
+          <div class="poster-icon">🎬</div>
+          <div class="poster-genre-tag">{{ film.genre_label }}</div>
+          <div class="score-badge">⭐ {{ film.rating }}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">{{ film.title }}</div>
+          <div class="card-genres">
+            {% for g in film.genres.split('|')[:3] %}
+            <span>{{ g }}</span>
+            {% endfor %}
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-track">
+              <div class="score-bar-fill" style="width:{{ (film.rating/5*100)|int }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- CATALOGUE -->
+  <div id="section-catalog" class="section">
+    <div class="section-header">
+      <div class="section-title">📚 Catalogue de <span>films</span></div>
+      <div class="result-count" id="catalog-count">{{ catalog_movies|length }} films</div>
+    </div>
+    <div class="input-group" style="margin-bottom:18px; max-width:420px;">
+      <label>Filtrer par catégorie</label>
+      <select id="genreFilter" onchange="filterCatalog()">
+        <option value="">Toutes les catégories</option>
+        {% for genre in genres %}
+        <option value="{{ genre|e }}">{{ genre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div id="catalog-grid" class="grid">
+      {% for film in catalog_movies %}
+      <div class="movie-card catalog-card" data-genres="{{ film.genres|e }}">
+        <div class="card-poster" style="background:{{ film.color }};">
+          <div class="poster-icon">🎬</div>
+          <div class="poster-genre-tag">{{ film.genre_label }}</div>
+          <div class="score-badge">⭐ {{ film.rating }}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">{{ film.title }}</div>
+          <div class="card-genres">
+            {% for g in film.genres.split('|')[:3] %}
+            <span>{{ g }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- COLLABORATIF -->
+  <div id="section-collab" class="section">
+    <div class="section-header">
+      <div class="section-title">👥 Recommandations <span>personnalisées</span></div>
+      <div class="result-count" id="collab-count">SVD · Filtrage collaboratif</div>
+    </div>
+    <div id="collab-grid" class="grid">
+      <div class="state-box" style="grid-column:1/-1">
+        <div class="icon">👤</div>
+        <p>Entrez un numéro d'utilisateur et cliquez sur <strong>"Mes recommandations"</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENU -->
+  <div id="section-content" class="section">
+    <div class="section-header">
+      <div class="section-title">🎯 Films <span>similaires</span></div>
+      <div class="result-count" id="content-count">TF-IDF · Filtrage par contenu</div>
+    </div>
+    <div id="content-grid" class="grid">
+      <div class="state-box" style="grid-column:1/-1">
+        <div class="icon">🔍</div>
+        <p>Recherchez un film et cliquez sur <strong>"Films similaires"</strong></p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  // ─── TABS ───────────────────────────────
+  function showSection(name, event) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
+  }
+
+  // ─── TOAST ──────────────────────────────
+  function toast(msg, isError=false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'show' + (isError ? ' error' : '');
+    setTimeout(() => t.className = '', 3000);
+  }
+
+  // ─── CARD BUILDER ───────────────────────
+  function buildCard(film, scoreHtml) {
+    const genres = film.genres
+      ? film.genres.split('|').slice(0,3).map(g => `<span>${g}</span>`).join('')
+      : '';
+    return `
+      <div class="movie-card">
+        <div class="card-poster" style="background:${film.color};">
+          <div class="poster-icon">🎬</div>
+          <div class="poster-genre-tag">${film.genre_label || film.genres?.split('|')[0] || ''}</div>
+          ${scoreHtml}
+        </div>
+        <div class="card-body">
+          <div class="card-title">${film.title}</div>
+          <div class="card-genres">${genres}</div>
+        </div>
+      </div>`;
+  }
+
+  // ─── COLLABORATIF ───────────────────────
+  async function getRecommendations() {
+    const selectedUser = document.getElementById('userSelect').value;
+    const userId = document.getElementById('userId').value;
+    const payload = { n: 12 };
+
+    if (selectedUser) {
+      payload.user_name = selectedUser;
+    } else {
+      if (!userId) { toast('❌ Entrez un numéro d\'utilisateur ou sélectionnez un profil', true); return; }
+      payload.user_id = parseInt(userId);
+    }
+
+    const grid  = document.getElementById('collab-grid');
+    const count = document.getElementById('collab-count');
+    grid.innerHTML = '<div class="state-box" style="grid-column:1/-1"><div class="icon">⏳</div><p>Calcul en cours…</p></div>';
+    showSectionById('collab');
+
+    try {
+      const res  = await fetch('/recommend', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.error) { toast('❌ ' + data.error, true); grid.innerHTML = `<div class="state-box" style="grid-column:1/-1"><div class="icon">❌</div><p>${data.error}</p></div>`; return; }
+
+      count.textContent = `${data.recommendations.length} films recommandés · Utilisateur #${data.user_id} · ${data.nb_vus} films déjà vus`;
+      grid.innerHTML = data.recommendations.map(f =>
+        buildCard(f, `<div class="score-badge">⭐ ${f.score}</div>`)
+      ).join('');
+      toast(`✅ ${data.recommendations.length} recommandations pour l'utilisateur #${data.user_id}`);
+    } catch(e) {
+      toast('❌ Erreur de connexion', true);
+    }
+  }
+
+  // ─── CONTENU ────────────────────────────
+  async function getSimilar() {
+    const title = document.getElementById('movieSearch').value.trim();
+    if (!title) { toast('❌ Entrez un titre de film', true); return; }
+
+    const grid  = document.getElementById('content-grid');
+    const count = document.getElementById('content-count');
+    grid.innerHTML = '<div class="state-box" style="grid-column:1/-1"><div class="icon">⏳</div><p>Recherche en cours…</p></div>';
+    showSectionById('content');
+    document.getElementById('autocomplete').classList.remove('show');
+
+    try {
+      const res  = await fetch('/similar', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({title, n: 12})
+      });
+      const data = await res.json();
+
+      if (data.error) { toast('❌ ' + data.error, true); grid.innerHTML = `<div class="state-box" style="grid-column:1/-1"><div class="icon">❌</div><p>${data.error}</p></div>`; return; }
+
+      count.textContent = `${data.results.length} films similaires à "${data.base_film}"`;
+      grid.innerHTML = data.results.map(f =>
+        buildCard(f, `<div class="sim-badge">▶ ${f.similarity}%</div>`)
+      ).join('');
+      document.getElementById('movieSearch').value = data.base_film;
+      toast(`✅ Films similaires à "${data.base_film}"`);
+    } catch(e) {
+      toast('❌ Erreur de connexion', true);
+    }
+  }
+
+  // ─── AUTOCOMPLETE ───────────────────────
+  let searchTimeout;
+  async function searchMovies(q) {
+    clearTimeout(searchTimeout);
+    if (q.length < 2) { document.getElementById('autocomplete').classList.remove('show'); return; }
+    searchTimeout = setTimeout(async () => {
+      const res   = await fetch(`/search?q=${encodeURIComponent(q)}`);
+      const data  = await res.json();
+      const ac    = document.getElementById('autocomplete');
+      if (!data.results.length) { ac.classList.remove('show'); return; }
+      ac.innerHTML = data.results.map(r => `
+        <div class="ac-item" onclick="selectMovie('${r.title.replace(/'/g,"\\'")}')">
+          <div>${r.title}</div>
+          <div class="ac-genre">${r.genres?.replace(/\|/g,' · ') || ''}</div>
+        </div>`).join('');
+      ac.classList.add('show');
+    }, 300);
+  }
+
+  function selectMovie(title) {
+    document.getElementById('movieSearch').value = title;
+    document.getElementById('autocomplete').classList.remove('show');
+    getSimilar();
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap'))
+      document.getElementById('autocomplete').classList.remove('show');
+  });
+
+  // ─── UTILS ──────────────────────────────
+  function showSectionById(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    const index = name === 'home' ? 0 : name === 'catalog' ? 1 : name === 'collab' ? 2 : 3;
+    document.querySelectorAll('.tab-btn')[index].classList.add('active');
+  }
+
+  function syncUserSelection() {
+    const select = document.getElementById('userSelect');
+    const input  = document.getElementById('userId');
+    if (select.value) {
+      input.value = '';
+    }
+  }
+
+  function filterCatalog() {
+    const genre = document.getElementById('genreFilter').value;
+    const cards = document.querySelectorAll('#catalog-grid .catalog-card');
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const genres = card.dataset.genres.split('|');
+      const show = !genre || genres.includes(genre);
+      card.style.display = show ? 'block' : 'none';
+      if (show) visibleCount += 1;
+    });
+    document.getElementById('catalog-count').textContent = `${visibleCount} films`;
+  }
+</script>
+</body>
+</html>
